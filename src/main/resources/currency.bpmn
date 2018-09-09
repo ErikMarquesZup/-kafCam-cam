@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_13fc5u5" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.16.2">
+  <bpmn:process id="GetRecommendationForCurrency" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>SequenceFlow_1qq0szw</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="AskExpert" name="AskExpert" camunda:formKey="rating">
+      <bpmn:extensionElements>
+        <camunda:formData>
+          <camunda:formField id="CurrencyRating" label="Currency Rating" type="long" defaultValue="0" />
+          <camunda:formField id="CurrencyOpinion" label="Currency Opi" type="string" />
+        </camunda:formData>
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_096o0pc</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_11yg18x</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="SequenceFlow_11yg18x" sourceRef="AskExpert" targetRef="SaveData" />
+    <bpmn:serviceTask id="SaveData" name="SaveData" camunda:delegateExpression="${saveDataServiceTask}">
+      <bpmn:incoming>SequenceFlow_11yg18x</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0syfy2p</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="RequestDataFromTopic" name="RequestDataFromTopic" camunda:delegateExpression="${requestDataServiceTask}">
+      <bpmn:incoming>SequenceFlow_1qq0szw</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1e5zeky</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="SequenceFlow_1qq0szw" sourceRef="StartEvent_1" targetRef="RequestDataFromTopic" />
+    <bpmn:endEvent id="EndEvent_1uugkz5">
+      <bpmn:incoming>SequenceFlow_053amy7</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_1upx2zv" name="Data not valid" sourceRef="ExclusiveGateway_1fr622p" targetRef="Task_02zqb7c">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${dataValid == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SequenceFlow_0ikw47x" name="Data valid" sourceRef="ExclusiveGateway_1fr622p" targetRef="NotifyUser">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${dataValid == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="SendNotification" name="SendNotification" camunda:delegateExpression="${sendNotificationServiceTask}">
+      <bpmn:incoming>SequenceFlow_0syfy2p</bpmn:incoming>
+      <bpmn:incoming>SequenceFlow_1jme7ew</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_053amy7</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="SequenceFlow_053amy7" sourceRef="SendNotification" targetRef="EndEvent_1uugkz5" />
+    <bpmn:serviceTask id="ValidateData" name="ValidateData" camunda:delegateExpression="${validateDataServiceTask}">
+      <bpmn:incoming>SequenceFlow_1fxp6e0</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0ioxmki</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="SequenceFlow_0ioxmki" sourceRef="ValidateData" targetRef="ExclusiveGateway_1fr622p" />
+    <bpmn:sequenceFlow id="SequenceFlow_0syfy2p" sourceRef="SaveData" targetRef="SendNotification" />
+    <bpmn:intermediateCatchEvent id="dataReady" name="dataReady">
+      <bpmn:incoming>SequenceFlow_1e5zeky</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1fxp6e0</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_1tuvzoc" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_1fxp6e0" sourceRef="dataReady" targetRef="ValidateData" />
+    <bpmn:sequenceFlow id="SequenceFlow_1e5zeky" sourceRef="RequestDataFromTopic" targetRef="dataReady" />
+    <bpmn:exclusiveGateway id="ExclusiveGateway_1fr622p">
+      <bpmn:incoming>SequenceFlow_0ioxmki</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0ikw47x</bpmn:outgoing>
+      <bpmn:outgoing>SequenceFlow_1upx2zv</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="SequenceFlow_096o0pc" sourceRef="NotifyUser" targetRef="AskExpert" />
+    <bpmn:serviceTask id="NotifyUser" name="NotifyUser" camunda:delegateExpression="${notifyUserServiceTask}">
+      <bpmn:incoming>SequenceFlow_0ikw47x</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_096o0pc</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_02zqb7c" name="DBCleanup" camunda:delegateExpression="${dbCleanUpServiceTask}">
+      <bpmn:incoming>SequenceFlow_1upx2zv</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1jme7ew</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="SequenceFlow_1jme7ew" sourceRef="Task_02zqb7c" targetRef="SendNotification" />
+  </bpmn:process>
+  <bpmn:message id="Message_1avrih6" />
+  <bpmn:message id="Message_1tuvzoc" name="dataReady" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="GetRecommendationForCurrency">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="173" y="97" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_141eqtr_di" bpmnElement="AskExpert">
+        <dc:Bounds x="1121" y="75" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_11yg18x_di" bpmnElement="SequenceFlow_11yg18x">
+        <di:waypoint x="1221" y="115" />
+        <di:waypoint x="1327" y="115" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_18tmhv6_di" bpmnElement="SaveData">
+        <dc:Bounds x="1327" y="75" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_0sn1rd1_di" bpmnElement="RequestDataFromTopic">
+        <dc:Bounds x="307" y="75" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1qq0szw_di" bpmnElement="SequenceFlow_1qq0szw">
+        <di:waypoint x="209" y="115" />
+        <di:waypoint x="307" y="115" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_1uugkz5_di" bpmnElement="EndEvent_1uugkz5">
+        <dc:Bounds x="1310" y="390" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1upx2zv_di" bpmnElement="SequenceFlow_1upx2zv">
+        <di:waypoint x="856" y="140" />
+        <di:waypoint x="856" y="239" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="777" y="176" width="68" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0ikw47x_di" bpmnElement="SequenceFlow_0ikw47x">
+        <di:waypoint x="881" y="115" />
+        <di:waypoint x="960" y="115" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="882" y="92" width="57" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_121lt22_di" bpmnElement="SendNotification">
+        <dc:Bounds x="1040" y="324" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_053amy7_di" bpmnElement="SequenceFlow_053amy7">
+        <di:waypoint x="1140" y="364" />
+        <di:waypoint x="1225" y="364" />
+        <di:waypoint x="1225" y="408" />
+        <di:waypoint x="1310" y="408" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_1p43rlk_di" bpmnElement="ValidateData">
+        <dc:Bounds x="670" y="75" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0ioxmki_di" bpmnElement="SequenceFlow_0ioxmki">
+        <di:waypoint x="770" y="115" />
+        <di:waypoint x="831" y="115" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0syfy2p_di" bpmnElement="SequenceFlow_0syfy2p">
+        <di:waypoint x="1377" y="155" />
+        <di:waypoint x="1377" y="251" />
+        <di:waypoint x="1090" y="251" />
+        <di:waypoint x="1090" y="324" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="IntermediateCatchEvent_0gddhvx_di" bpmnElement="dataReady">
+        <dc:Bounds x="510" y="97" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="499" y="140" width="60" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1fxp6e0_di" bpmnElement="SequenceFlow_1fxp6e0">
+        <di:waypoint x="546" y="115" />
+        <di:waypoint x="670" y="115" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1e5zeky_di" bpmnElement="SequenceFlow_1e5zeky">
+        <di:waypoint x="407" y="115" />
+        <di:waypoint x="510" y="115" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ExclusiveGateway_1q92oax_di" bpmnElement="ExclusiveGateway_1fr622p" isMarkerVisible="true">
+        <dc:Bounds x="831" y="90" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="991" y="71" width="4" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_096o0pc_di" bpmnElement="SequenceFlow_096o0pc">
+        <di:waypoint x="1060" y="115" />
+        <di:waypoint x="1121" y="115" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_0pxy4ij_di" bpmnElement="NotifyUser">
+        <dc:Bounds x="960" y="75" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_16ir5rc_di" bpmnElement="Task_02zqb7c">
+        <dc:Bounds x="806" y="239" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1jme7ew_di" bpmnElement="SequenceFlow_1jme7ew">
+        <di:waypoint x="856" y="319" />
+        <di:waypoint x="856" y="364" />
+        <di:waypoint x="1040" y="364" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
